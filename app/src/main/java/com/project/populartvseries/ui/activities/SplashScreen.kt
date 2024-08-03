@@ -53,7 +53,7 @@ fun SplashScreenUI(onTimeout : () -> Unit) {
         Image(
             painter = painterResource(id = R.drawable.app_logo),
             contentDescription = "App Logo",
-            modifier = Modifier.size(180.dp)
+            modifier = Modifier.size(200.dp)
         )
     }
 
