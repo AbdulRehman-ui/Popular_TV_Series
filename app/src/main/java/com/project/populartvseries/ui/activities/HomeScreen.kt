@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -49,6 +50,7 @@ import com.project.populartvseries.R
 import com.project.populartvseries.apiViewModels.SeriesViewModel
 import com.project.populartvseries.common.Status
 import com.project.populartvseries.ui.common.MoviesList
+import com.project.populartvseries.ui.dataClass.BannerItem
 import com.project.populartvseries.ui.dataClass.MovieListItem
 import com.project.populartvseries.ui.theme.PopularTVSeriesTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -74,35 +76,12 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
     val context = LocalContext.current
     val seriesResponse by seriesViewModel.res_popular_series.observeAsState()
     var movies = listOf<MovieListItem>()
-    var bannerImages = listOf<String>()
+    var bannerItems = listOf<BannerItem>()
 
     LaunchedEffect(Unit) {
         seriesViewModel.getPopularSeries(language = "en-US")
     }
 
-    when (seriesResponse?.status) {
-        Status.SUCCESS -> {
-            movies = seriesResponse!!.data?.results?.map {
-                MovieListItem(
-                    "https://image.tmdb.org/t/p/w500${it?.posterPath}",
-                    it?.id.toString() ?: ""
-                )
-            } ?: emptyList()
-
-            bannerImages = seriesResponse!!.data?.results?.mapNotNull {
-                it?.backdropPath?.let { path -> "https://image.tmdb.org/t/p/w500$path" }
-            } ?: emptyList()
-        }
-        Status.LOADING -> {
-            CircularProgressIndicator()
-        }
-        Status.ERROR -> {
-            Toast.makeText(context, "Error: ${seriesResponse?.message}", Toast.LENGTH_SHORT).show()
-        }
-        null -> {
-            Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -128,6 +107,8 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
                     .padding(end = 20.dp, top = 20.dp)
                     .wrapContentSize()
                     .clickable {
+
+
                     },
                 alignment = Alignment.TopEnd,
             )
@@ -135,24 +116,51 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
 
         Spacer(modifier = Modifier.height(15.dp))
 
-        if (bannerImages.isNotEmpty()) {
-            BannerSlider(images = bannerImages)
-        } else {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-        }
+        when (seriesResponse?.status) {
+            Status.SUCCESS -> {
+                movies = seriesResponse!!.data?.results?.map {
+                    MovieListItem(
+                        "https://image.tmdb.org/t/p/w500${it?.posterPath}",
+                        it?.id.toString() ?: ""
+                    )
+                } ?: emptyList()
 
-        Spacer(modifier = Modifier.height(15.dp))
+                bannerItems = seriesResponse!!.data?.results?.mapNotNull {
+                    it?.backdropPath?.let { path ->
+                        BannerItem("https://image.tmdb.org/t/p/w500$path", it.id.toString())
+                    }
+                } ?: emptyList()
 
-        Text(
-            text = stringResource(R.string.popular),
-            fontSize = 19.sp,
-            color = MaterialTheme.colorScheme.tertiary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 15.dp)
-        )
+                if (bannerItems.isNotEmpty()) {
+                    BannerSlider(items = bannerItems)
+                } else {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                }
 
-        MoviesList(items = movies) { item ->
-            println("Clicked item: ${item.seriesId}")
+                Spacer(modifier = Modifier.height(15.dp))
+
+                Text(
+                    text = stringResource(R.string.popular),
+                    fontSize = 19.sp,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 15.dp)
+                )
+
+                MoviesList(items = movies) { item ->
+                    println("Clicked item: ${item.seriesId}")
+                }
+
+            }
+            Status.LOADING -> {
+                LoadingProgressUI()
+            }
+            Status.ERROR -> {
+                Toast.makeText(context, "Error: ${seriesResponse?.message}", Toast.LENGTH_SHORT).show()
+            }
+            null -> {
+
+            }
         }
     }
 }
@@ -186,15 +194,15 @@ fun SearchBar() {
 }
 
 @Composable
-fun BannerSlider(images: List<String>) {
+fun BannerSlider(items: List<BannerItem>) {
     val pagerState = rememberPagerState()
 
-    LaunchedEffect(images) {
-        if (images.isNotEmpty()) {
+    LaunchedEffect(items) {
+        if (items.isNotEmpty()) {
             while (true) {
                 try {
                     delay(3000)
-                    val nextPage = (pagerState.currentPage + 1) % images.size
+                    val nextPage = (pagerState.currentPage + 1) % items.size
                     pagerState.animateScrollToPage(nextPage)
                 } catch (e: Exception) {
                     Log.e("BannerSlider", "Error during auto-scroll", e)
@@ -205,7 +213,7 @@ fun BannerSlider(images: List<String>) {
 
     HorizontalPager(
         state = pagerState,
-        count = images.size,
+        count = items.size,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 10.dp)
@@ -214,9 +222,12 @@ fun BannerSlider(images: List<String>) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(250.dp)
+                .clickable {
+                    println("Clicked banner ID: ${items[page].seriesId}")
+                }
         ) {
             AsyncImage(
-                model = images[page],
+                model = items[page].bannerUrl,
                 contentDescription = null,
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize()
@@ -224,3 +235,21 @@ fun BannerSlider(images: List<String>) {
         }
     }
 }
+
+@Composable
+fun LoadingProgressUI() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primary),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier
+                .size(48.dp),
+            color = MaterialTheme.colorScheme.secondary,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    }
+}
+

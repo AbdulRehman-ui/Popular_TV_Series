@@ -30,8 +30,7 @@ fun MoviesList(items: List<MovieListItem>, onItemClicked: (MovieListItem) -> Uni
         columns = GridCells.Fixed(3),
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        contentPadding = PaddingValues(8.dp)
+            .padding(start = 10.dp, end = 10.dp, top = 8.dp),
     ) {
         items(items) { item ->
             ItemView(item, onItemClicked)

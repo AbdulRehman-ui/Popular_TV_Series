@@ -11,5 +11,8 @@ import retrofit2.http.Query
 interface ApiService {
 
     @GET("tv/popular")
-    suspend fun getPopularSeries(@Query("language") language : String, @Query("api_key") apiKey : String): Response<PopularSeriesResponse>
+    suspend fun getPopularSeries(
+        @Query("language") language : String,
+        @Query("api_key") apiKey : String
+    ): Response<PopularSeriesResponse>
 }
