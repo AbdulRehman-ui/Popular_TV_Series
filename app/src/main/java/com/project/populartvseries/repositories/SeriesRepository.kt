@@ -9,4 +9,6 @@ class SeriesRepository @Inject constructor(
 
     suspend fun getPopularSeries(language : String, apiKey : String) = apiHelper.getPopularSeries(language, apiKey)
 
+    suspend fun getSeriesDetails(seriesId : String, language : String, apiKey : String) = apiHelper.getSeriesDetails(seriesId, language, apiKey)
+
 }

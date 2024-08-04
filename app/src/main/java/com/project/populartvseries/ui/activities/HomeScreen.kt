@@ -1,5 +1,6 @@
 package com.project.populartvseries.ui.activities
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -149,6 +150,11 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
 
                 MoviesList(items = movies) { item ->
                     println("Clicked item: ${item.seriesId}")
+
+                    val intent = Intent(context, SeriesScreen::class.java).apply {
+                        putExtra("seriesId", item.seriesId)
+                    }
+                    context.startActivity(intent)
                 }
 
             }

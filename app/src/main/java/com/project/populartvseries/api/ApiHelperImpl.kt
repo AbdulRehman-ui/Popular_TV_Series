@@ -2,6 +2,7 @@ package com.project.populartvseries.api
 
 
 import com.project.populartvseries.response.PopularSeriesResponse
+import com.project.populartvseries.response.SeriesDetailsResponse
 import retrofit2.Response
 import javax.inject.Inject
 
@@ -10,5 +11,8 @@ class ApiHelperImpl @Inject constructor(
 ) : ApiHelper {
     override suspend fun getPopularSeries(language : String, apiKey : String): Response<PopularSeriesResponse> =
         apiService.getPopularSeries(language, apiKey)
+
+    override suspend fun getSeriesDetails(seriesId: String, language: String, apiKey: String): Response<SeriesDetailsResponse> =
+        apiService.getSeriesDetails(seriesId, language, apiKey)
 
 }
