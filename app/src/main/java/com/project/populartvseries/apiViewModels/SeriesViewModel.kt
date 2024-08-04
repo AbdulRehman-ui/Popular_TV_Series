@@ -6,27 +6,32 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.project.populartvseries.common.Resource
 import com.project.populartvseries.repositories.SeriesRepository
-import com.project.populartvseries.response.ResultsItemPopular
+import com.project.populartvseries.response.PopularSeriesResponse
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class SeriesViewModel(private val repository: SeriesRepository) : ViewModel() {
 
-    private val _tvSeries = MutableLiveData<Resource<List<ResultsItemPopular>>>()
-    val tvSeries: LiveData<Resource<List<ResultsItemPopular>>> get() = _tvSeries
+@HiltViewModel
+class SeriesViewModel @Inject constructor(
+    val mainRepository: SeriesRepository
+)  :  ViewModel() {
 
-    fun getPopularTVSeries(language: String) {
-        viewModelScope.launch {
-            _tvSeries.value = Resource.loading(null)
-            try {
-                repository.getPopularTVSeries(language).observeForever {
-                    _tvSeries.value = it
-                }
-            } catch (e: Exception) {
-                _tvSeries.value = Resource.error(e.message ?: "An error occurred", null)
+    private val _res_popular_series = MutableLiveData<Resource<PopularSeriesResponse>>()
+
+    val res_popular_series: LiveData<Resource<PopularSeriesResponse>>
+        get() = _res_popular_series
+
+    fun getPopularSeries(language: String) = viewModelScope.launch {
+        _res_popular_series.postValue(Resource.loading(null))
+        mainRepository.getPopularSeries(language, "7033a297d26122cdb80b8f226ee83111").let {
+            if (it.isSuccessful) {
+                _res_popular_series.postValue(Resource.success(it.body()))
+            } else {
+                _res_popular_series.postValue(Resource.error(it.message(), null))
             }
         }
     }
-
 }
 
 

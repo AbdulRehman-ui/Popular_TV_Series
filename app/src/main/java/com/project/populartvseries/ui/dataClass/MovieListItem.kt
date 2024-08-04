@@ -1,3 +1,3 @@
 package com.project.populartvseries.ui.dataClass
 
-data class MovieListItem(val imageUrl: String, val text: String)
+data class MovieListItem(val seriesPoster: String, val seriesId: String)

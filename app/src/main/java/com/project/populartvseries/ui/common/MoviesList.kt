@@ -4,11 +4,16 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,8 +26,12 @@ import com.project.populartvseries.ui.dataClass.MovieListItem
 
 @Composable
 fun MoviesList(items: List<MovieListItem>, onItemClicked: (MovieListItem) -> Unit) {
-    LazyRow(
-    modifier = Modifier.padding(16.dp)
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentPadding = PaddingValues(8.dp)
     ) {
         items(items) { item ->
             ItemView(item, onItemClicked)
@@ -32,7 +41,6 @@ fun MoviesList(items: List<MovieListItem>, onItemClicked: (MovieListItem) -> Uni
 
 @Composable
 fun ItemView(item: MovieListItem, onItemClicked: (MovieListItem) -> Unit) {
-
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -43,11 +51,13 @@ fun ItemView(item: MovieListItem, onItemClicked: (MovieListItem) -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = rememberImagePainter(data = item.imageUrl),
+                painter = rememberImagePainter(data = item.seriesPoster),
                 contentDescription = null,
-                modifier = Modifier.width(140.dp).height(180.dp),
-                contentScale = ContentScale.FillHeight,
-                )
+                modifier = Modifier
+                    .width(140.dp)
+                    .height(180.dp),
+                contentScale = ContentScale.Crop
+            )
         }
     }
 }
