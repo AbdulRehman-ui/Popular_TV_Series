@@ -45,9 +45,13 @@ import coil.compose.rememberImagePainter
 import com.project.populartvseries.R
 import com.project.populartvseries.apiViewModels.SeriesViewModel
 import com.project.populartvseries.common.Status
+import com.project.populartvseries.ui.common.CastList
 import com.project.populartvseries.ui.common.MoviesList
+import com.project.populartvseries.ui.common.SeasonList
 import com.project.populartvseries.ui.dataClass.BannerItem
+import com.project.populartvseries.ui.dataClass.CastIem
 import com.project.populartvseries.ui.dataClass.MovieListItem
+import com.project.populartvseries.ui.dataClass.SeasonListItem
 import com.project.populartvseries.ui.theme.PopularTVSeriesTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -94,24 +98,46 @@ fun SeriesDetailsUI(seriesViewModel: SeriesViewModel, seriesId : String) {
                 var posterPath  = ""
                 var rating  = ""
                 var genreList = ""
+                var platforms: List<CastIem> = emptyList()
+                var seasons: List<SeasonListItem> = emptyList()
+                var seasonCount = ""
+                var languagesCount = ""
+
+
 
                 seriesResponse?.data?.let { it ->
                     seriesName = it.name.toString()
                     seriesDescription = it.overview.toString()
                     posterPath = "https://image.tmdb.org/t/p/w500/${it.posterPath.toString()}"
                     rating = String.format("%.1f", it.voteAverage)
-                    val genresList: ArrayList<String> = it.genres
-                        ?.filterNotNull()
-                        ?.map { genre -> genre.name ?: "" }
-                        ?.filter { it.isNotEmpty() }
+                    seasonCount = it.numberOfSeasons.toString()
+                    languagesCount = it.languages?.size.toString() ?: ""
+
+                    val genresList: ArrayList<String> = it.genres?.map { genre -> genre?.name ?: "" }
                         ?.toCollection(ArrayList()) ?: arrayListOf()
 
                     genreList =  genresList.joinToString(" | ")
+
+                    platforms = it.networks?.map {
+                        CastIem(
+                            "https://image.tmdb.org/t/p/w500${it?.logoPath}",
+                            it?.name.toString() ?: ""
+                        )
+                    } ?: emptyList()
+
+                    seasons = it.seasons?.map {
+                        SeasonListItem(
+                            "https://image.tmdb.org/t/p/w500${it?.posterPath}",
+                            it?.name.toString() ?: "",
+                            it?.seasonNumber.toString() ?: ""
+                        )
+                    } ?: emptyList()
 
                 }
 
                 Column(modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(12.dp)) {
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -126,7 +152,9 @@ fun SeriesDetailsUI(seriesViewModel: SeriesViewModel, seriesId : String) {
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth().height(270.dp)) {
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(270.dp)) {
                         Image(
                             painter = rememberImagePainter(data = posterPath),
                             contentDescription = "Series Poster",
@@ -201,12 +229,46 @@ fun SeriesDetailsUI(seriesViewModel: SeriesViewModel, seriesId : String) {
 
                         }
                     }
-                }
 
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = "${languagesCount} Languages",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 50.dp)
+                    )
+
+
+                    Spacer(modifier = Modifier.height(15.dp))
+
+                    Text(
+                        text = stringResource(R.string.platforms_to_watch),
+                        fontSize = 17.sp,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    CastList(items = platforms)
+
+                    Spacer(modifier = Modifier.height(15.dp))
+
+                    Text(
+                        text = "Seasons ($seasonCount)",
+                        fontSize = 17.sp,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    SeasonList(items = seasons)
+                }
             }
+
             Status.LOADING -> {
                 LoadingProgressUI()
             }
+
             Status.ERROR -> {
                 Toast.makeText(context, "Error: ${seriesResponse?.message}", Toast.LENGTH_SHORT).show()
             }
