@@ -5,4 +5,7 @@
     <string name="popular">Popular</string>
     <string name="title_activity_series_screen">SeriesScreen</string>
     <string name="platforms_to_watch">Platforms to watch</string>
+    <string name="cast">Cast</string>
+    <string name="nothing_to_show">Nothing to show</string>
+    <string name="title_activity_season_screen">SeasonScreen</string>
 </resources>

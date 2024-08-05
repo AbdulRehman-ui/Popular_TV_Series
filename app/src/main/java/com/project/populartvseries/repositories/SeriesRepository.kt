@@ -11,4 +11,6 @@ class SeriesRepository @Inject constructor(
 
     suspend fun getSeriesDetails(seriesId : String, language : String, apiKey : String) = apiHelper.getSeriesDetails(seriesId, language, apiKey)
 
+    suspend fun getSeasonDetails(seriesId : String, seasonId : String,  language : String, apiKey : String) = apiHelper.getSeasonDetails(seriesId, seasonId, language, apiKey)
+
 }

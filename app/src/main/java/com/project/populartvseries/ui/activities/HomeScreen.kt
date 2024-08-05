@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -132,32 +135,31 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
                     }
                 } ?: emptyList()
 
-                if (bannerItems.isNotEmpty()) {
-                    BannerSlider(items = bannerItems)
-                } else {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                }
-
-                Spacer(modifier = Modifier.height(15.dp))
-
-                Text(
-                    text = stringResource(R.string.popular),
-                    fontSize = 19.sp,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 15.dp)
-                )
-
-                MoviesList(items = movies) { item ->
-                    println("Clicked item: ${item.seriesId}")
-
-                    val intent = Intent(context, SeriesScreen::class.java).apply {
-                        putExtra("seriesId", item.seriesId)
+                    if (bannerItems.isNotEmpty()) {
+                        BannerSlider(items = bannerItems)
+                    } else {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                     }
-                    context.startActivity(intent)
-                }
 
+                    Spacer(modifier = Modifier.height(15.dp))
+
+                    Text(
+                        text = stringResource(R.string.popular),
+                        fontSize = 19.sp,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 15.dp)
+                    )
+                    MoviesList(items = movies) { item ->
+                        println("Clicked item: ${item.seriesId}")
+
+                        val intent = Intent(context, SeriesScreen::class.java).apply {
+                            putExtra("seriesId", item.seriesId)
+                        }
+                        context.startActivity(intent)
+                    }
             }
+
             Status.LOADING -> {
                 LoadingProgressUI()
             }

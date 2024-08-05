@@ -2,6 +2,7 @@ package com.project.populartvseries.ui.common
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -25,26 +26,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberImagePainter
+import com.project.populartvseries.ui.dataClass.MovieListItem
 import com.project.populartvseries.ui.dataClass.SeasonListItem
 
 @Composable
-fun SeasonList(items: List<SeasonListItem>) {
+fun SeasonList(items: List<SeasonListItem>, onItemClicked: (SeasonListItem) -> Unit) {
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 10.dp, end = 10.dp, top = 8.dp),
     ) {
         items(items) { item ->
-            SeasonView(item)
+            SeasonView(item, onItemClicked)
         }
     }
 }
 
 @Composable
-fun SeasonView(item: SeasonListItem) {
+fun SeasonView(item: SeasonListItem, onItemClicked: (SeasonListItem) -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(8.dp)
+            .clickable { onItemClicked(item) }
     ) {
         Image(
             painter = rememberImagePainter(data = item.seasonImage),
