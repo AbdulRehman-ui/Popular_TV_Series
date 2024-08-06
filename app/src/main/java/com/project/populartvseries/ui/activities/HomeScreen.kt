@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
@@ -88,51 +89,56 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
     var bannerItems = listOf<BannerItem>()
 
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = false)
+    val seriesPager = seriesViewModel.pager.collectAsLazyPagingItems()
+
 
     LaunchedEffect(Unit) {
-        seriesViewModel.getPopularSeries(language = "en-US")
+        seriesViewModel.getPopularSeries(language = "en-US", page = 1)
     }
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.primary)
-        ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Image(
-                    painter = painterResource(id = R.drawable.app_logo_horizontal),
-                    contentDescription = "App Logo",
-                    modifier = Modifier
-                        .padding(start = 20.dp, top = 20.dp)
-                        .width(140.dp),
-                    alignment = Alignment.Center
-                )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primary)
+    ) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Image(
+                painter = painterResource(id = R.drawable.app_logo_horizontal),
+                contentDescription = "App Logo",
+                modifier = Modifier
+                    .padding(start = 20.dp, top = 20.dp)
+                    .width(140.dp),
+                alignment = Alignment.Center
+            )
 
-                Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(1f))
 
-                Image(
-                    painter = painterResource(id = R.drawable.ic_search),
-                    contentDescription = "Search Icon",
-                    modifier = Modifier
-                        .padding(end = 20.dp, top = 20.dp)
-                        .wrapContentSize()
-                        .clickable {
-                            context.startActivity(Intent(context, SearchScreen::class.java))
-                        },
-                    alignment = Alignment.TopEnd,
-                )
+            Image(
+                painter = painterResource(id = R.drawable.ic_search),
+                contentDescription = "Search Icon",
+                modifier = Modifier
+                    .padding(end = 20.dp, top = 20.dp)
+                    .wrapContentSize()
+                    .clickable {
+                        context.startActivity(Intent(context, SearchScreen::class.java))
+                    },
+                alignment = Alignment.TopEnd,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(15.dp))
+
+        SwipeRefresh(
+            state = swipeRefreshState,
+            onRefresh = {
+                swipeRefreshState.isRefreshing = true
+                seriesViewModel.getPopularSeries(language = "en-US", page = 1)
+                swipeRefreshState.isRefreshing = false
+
+                seriesPager.refresh()
+
             }
-
-            Spacer(modifier = Modifier.height(15.dp))
-
-            SwipeRefresh(
-                state = swipeRefreshState,
-                onRefresh = {
-                    swipeRefreshState.isRefreshing = true
-                    seriesViewModel.getPopularSeries(language = "en-US")
-                    swipeRefreshState.isRefreshing = false
-                }
-            ) {
+        ) {
 
             when (seriesResponse?.status) {
                 Status.SUCCESS -> {
@@ -149,33 +155,33 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
                         }
                     } ?: emptyList()
 
-                Column {
+                    Column {
 
-                    if (bannerItems.isNotEmpty()) {
-                        BannerSlider(items = bannerItems)
-                    } else {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                    }
-
-                    Spacer(modifier = Modifier.height(15.dp))
-
-                    Text(
-                        text = stringResource(R.string.popular),
-                        fontSize = 19.sp,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 15.dp)
-                    )
-                    MoviesList(items = movies) { item ->
-                        println("Clicked item: ${item.seriesId}")
-
-                        val intent = Intent(context, SeriesScreen::class.java).apply {
-                            putExtra("seriesId", item.seriesId)
+                        if (bannerItems.isNotEmpty()) {
+                            BannerSlider(items = bannerItems)
+                        } else {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                         }
-                        context.startActivity(intent)
-                    }
 
-                }
+                        Spacer(modifier = Modifier.height(15.dp))
+
+                        Text(
+                            text = stringResource(R.string.popular),
+                            fontSize = 19.sp,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start = 15.dp)
+                        )
+                        MoviesList(items = seriesPager) { item ->
+                            println("Clicked item: ${item.seriesId}")
+
+                            val intent = Intent(context, SeriesScreen::class.java).apply {
+                                putExtra("seriesId", item.seriesId)
+                            }
+                            context.startActivity(intent)
+                        }
+
+                    }
 
                 }
 
@@ -193,14 +199,15 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
                 }
             }
 
-            }
         }
+    }
 }
 
 @Composable
 fun BannerSlider(items: List<BannerItem>) {
     val pagerState = rememberPagerState()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(items) {
         if (items.isNotEmpty()) {
@@ -231,7 +238,10 @@ fun BannerSlider(items: List<BannerItem>) {
                 .fillMaxWidth()
                 .height(250.dp)
                 .clickable {
-                    println("Clicked banner ID: ${items[page].seriesId}")
+                    val intent = Intent(context, SeriesScreen::class.java).apply {
+                        putExtra("seriesId", items[page].seriesId)
+                    }
+                    context.startActivity(intent)
                 }
         ) {
             AsyncImage(
@@ -260,4 +270,3 @@ fun LoadingProgressUI() {
         )
     }
 }
-

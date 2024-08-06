@@ -8,12 +8,12 @@ import retrofit2.Response
 
 interface ApiHelper {
 
-    suspend fun getPopularSeries(language : String, apiKey : String) : Response<PopularSeriesResponse>
+    suspend fun getPopularSeries(language : String, page: Int, apiKey : String) : Response<PopularSeriesResponse>
 
     suspend fun getSeriesDetails(seriesId : String, language: String, apiKey: String) : Response<SeriesDetailsResponse>
 
     suspend fun getSeasonDetails(seriesId : String, seasonId : String, language: String, apiKey: String) : Response<SeasonDetailsResponse>
 
-    suspend fun getSearchSeasonDetails(query : String, language: String, apiKey: String) : Response<SearchSeriesResponse>
+    suspend fun getSearchSeasonDetails(query : String, language: String, page: Int, apiKey: String) : Response<SearchSeriesResponse>
 
 }

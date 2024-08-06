@@ -16,7 +16,8 @@ interface ApiService {
     @GET("tv/popular")
     suspend fun getPopularSeries(
         @Query("language") language : String,
-        @Query("api_key") apiKey : String
+        @Query("page") page: Int,
+        @Query("api_key") apiKey : String,
     ): Response<PopularSeriesResponse>
 
     @GET("tv/{id}")
@@ -39,6 +40,7 @@ interface ApiService {
     suspend fun getSearchSeriesDetails(
         @Query("query") query : String,
         @Query("language") language : String,
+        @Query("page") page : Int,
         @Query("api_key") apiKey : String
     ): Response<SearchSeriesResponse>
 

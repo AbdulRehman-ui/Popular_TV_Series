@@ -11,8 +11,8 @@ import javax.inject.Inject
 class ApiHelperImpl @Inject constructor(
     private val apiService: ApiService
 ) : ApiHelper {
-    override suspend fun getPopularSeries(language : String, apiKey : String): Response<PopularSeriesResponse> =
-        apiService.getPopularSeries(language, apiKey)
+    override suspend fun getPopularSeries(language : String, page: Int, apiKey : String): Response<PopularSeriesResponse> =
+        apiService.getPopularSeries(language, page, apiKey)
 
     override suspend fun getSeriesDetails(seriesId: String, language: String, apiKey: String): Response<SeriesDetailsResponse> =
         apiService.getSeriesDetails(seriesId, language, apiKey)
@@ -28,8 +28,9 @@ class ApiHelperImpl @Inject constructor(
     override suspend fun getSearchSeasonDetails(
         query: String,
         language: String,
+        page: Int,
         apiKey: String
     ): Response<SearchSeriesResponse> =
-        apiService.getSearchSeriesDetails(query, language, apiKey)
+        apiService.getSearchSeriesDetails(query, language, page, apiKey)
 
 }

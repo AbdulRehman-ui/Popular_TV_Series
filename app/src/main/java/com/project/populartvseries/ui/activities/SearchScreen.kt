@@ -35,6 +35,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.project.populartvseries.R
@@ -72,9 +73,12 @@ fun SearchScreenUI(seriesViewModel: SeriesViewModel) {
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = false)
     val searchQuery = remember { mutableStateOf(TextFieldValue("")) }
 
+    val pagingItems = seriesViewModel.getSearchSeriesPager(searchQuery.value.text).collectAsLazyPagingItems()
+
     LaunchedEffect(searchQuery.value.text) {
         if (searchQuery.value.text.length >= 3) {
-            seriesViewModel.getsearchDetails(searchQuery.value.text, "en-US")
+            seriesViewModel.getsearchDetails(searchQuery.value.text, 1,"en-US")
+            pagingItems.refresh()
         }
     }
 
@@ -125,9 +129,11 @@ fun SearchScreenUI(seriesViewModel: SeriesViewModel) {
                 onRefresh = {
                     swipeRefreshState.isRefreshing = true
                     if (searchQuery.value.text.length >= 3) {
-                        seriesViewModel.getsearchDetails(searchQuery.value.text, "en-US")
+                        seriesViewModel.getsearchDetails(searchQuery.value.text, 1,"en-US")
                     }
+                    pagingItems.refresh()
                     swipeRefreshState.isRefreshing = false
+
                 }
             ) {
                 when (seriesResponse?.status) {
@@ -140,7 +146,7 @@ fun SearchScreenUI(seriesViewModel: SeriesViewModel) {
                             )
                         } ?: emptyList()
 
-                        MoviesList(items = movies) { item ->
+                        MoviesList(items = pagingItems) { item ->
                             val intent = Intent(context, SeriesScreen::class.java).apply {
                                 putExtra("seriesId", item.seriesId)
                             }

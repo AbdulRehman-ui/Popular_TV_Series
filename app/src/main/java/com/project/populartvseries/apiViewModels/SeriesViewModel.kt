@@ -4,14 +4,23 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.project.populartvseries.common.Resource
 import com.project.populartvseries.repositories.SeriesRepository
+import com.project.populartvseries.resources.SearchSeriesPagingSource
+import com.project.populartvseries.resources.SeriesPagingSource
 import com.project.populartvseries.response.PopularSeriesResponse
 import com.project.populartvseries.response.SearchSeriesResponse
 import com.project.populartvseries.response.SeasonDetailsResponse
 import com.project.populartvseries.response.SeriesDetailsResponse
+import com.project.populartvseries.ui.dataClass.MovieListItem
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import retrofit2.Response
 import javax.inject.Inject
 
 
@@ -20,14 +29,18 @@ class SeriesViewModel @Inject constructor(
     val mainRepository: SeriesRepository
 )  :  ViewModel() {
 
-    private val _res_popular_series = MutableLiveData<Resource<PopularSeriesResponse>>()
 
+    private val _res_popular_series = MutableLiveData<Resource<PopularSeriesResponse>>()
     val res_popular_series: LiveData<Resource<PopularSeriesResponse>>
         get() = _res_popular_series
 
-    fun getPopularSeries(language: String) = viewModelScope.launch {
+    val pager = Pager(PagingConfig(pageSize = 10)) {
+        SeriesPagingSource(this)
+    }.flow.cachedIn(viewModelScope)
+
+    fun getPopularSeries(language: String, page: Int) = viewModelScope.launch {
         _res_popular_series.postValue(Resource.loading(null))
-        mainRepository.getPopularSeries(language, "7033a297d26122cdb80b8f226ee83111").let {
+        mainRepository.getPopularSeries(language, page, "7033a297d26122cdb80b8f226ee83111").let {
             if (it.isSuccessful) {
                 _res_popular_series.postValue(Resource.success(it.body()))
             } else {
@@ -35,6 +48,11 @@ class SeriesViewModel @Inject constructor(
             }
         }
     }
+
+    suspend fun fetchPopularSeries(language: String, page: Int): Response<PopularSeriesResponse> {
+        return mainRepository.getPopularSeries(language, page, "7033a297d26122cdb80b8f226ee83111")
+    }
+
 
     private val _res_series_details = MutableLiveData<Resource<SeriesDetailsResponse>>()
 
@@ -69,14 +87,23 @@ class SeriesViewModel @Inject constructor(
     }
 
 
+
     private val _res_search_details = MutableLiveData<Resource<SearchSeriesResponse>>()
+    val res_search_details: LiveData<Resource<SearchSeriesResponse>> get() = _res_search_details
 
-    val res_search_details: LiveData<Resource<SearchSeriesResponse>>
-        get() = _res_search_details
+    fun getSearchSeriesPager(query: String): Flow<PagingData<MovieListItem>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = { SearchSeriesPagingSource(mainRepository, query) }
+        ).flow
+    }
 
-    fun getsearchDetails(query : String, language : String) = viewModelScope.launch {
+    fun getsearchDetails(query: String, page: Int, language: String) = viewModelScope.launch {
         _res_search_details.postValue(Resource.loading(null))
-        mainRepository.getSearchSeriesDetails(query, language, "7033a297d26122cdb80b8f226ee83111").let {
+        mainRepository.getSearchSeriesDetails(query, language, page, "7033a297d26122cdb80b8f226ee83111").let {
             if (it.isSuccessful) {
                 _res_search_details.postValue(Resource.success(it.body()))
             } else {
