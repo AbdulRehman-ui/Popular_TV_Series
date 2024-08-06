@@ -1,6 +1,7 @@
 package com.project.populartvseries.api
 
 import com.project.populartvseries.response.PopularSeriesResponse
+import com.project.populartvseries.response.SearchSeriesResponse
 import com.project.populartvseries.response.SeasonDetailsResponse
 import com.project.populartvseries.response.SeriesDetailsResponse
 import retrofit2.Response
@@ -33,4 +34,13 @@ interface ApiService {
         @Query("language") language: String,
         @Query("api_key") apiKey: String
     ) : Response<SeasonDetailsResponse>
+
+    @GET("search/tv")
+    suspend fun getSearchSeriesDetails(
+        @Query("query") query : String,
+        @Query("language") language : String,
+        @Query("api_key") apiKey : String
+    ): Response<SearchSeriesResponse>
+
+
 }

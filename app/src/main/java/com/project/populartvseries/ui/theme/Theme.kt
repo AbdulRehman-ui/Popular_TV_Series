@@ -20,13 +20,14 @@ private val DarkColorScheme = darkColorScheme(
 private val LightColorScheme = lightColorScheme(
     primary = black,
     secondary = red,
-    tertiary = white
+    tertiary = white,
+    background = transparent
 )
 
 @Composable
 fun PopularTVSeriesTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

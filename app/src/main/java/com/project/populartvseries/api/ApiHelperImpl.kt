@@ -2,6 +2,7 @@ package com.project.populartvseries.api
 
 
 import com.project.populartvseries.response.PopularSeriesResponse
+import com.project.populartvseries.response.SearchSeriesResponse
 import com.project.populartvseries.response.SeasonDetailsResponse
 import com.project.populartvseries.response.SeriesDetailsResponse
 import retrofit2.Response
@@ -23,5 +24,12 @@ class ApiHelperImpl @Inject constructor(
         apiKey: String
     ): Response<SeasonDetailsResponse> =
         apiService.getSeasonDetails(seriesId, seasonId, language, apiKey)
+
+    override suspend fun getSearchSeasonDetails(
+        query: String,
+        language: String,
+        apiKey: String
+    ): Response<SearchSeriesResponse> =
+        apiService.getSearchSeriesDetails(query, language, apiKey)
 
 }

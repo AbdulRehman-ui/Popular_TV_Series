@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,6 +51,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.project.populartvseries.R
 import com.project.populartvseries.apiViewModels.SeriesViewModel
 import com.project.populartvseries.common.Status
@@ -59,6 +62,8 @@ import com.project.populartvseries.ui.dataClass.MovieListItem
 import com.project.populartvseries.ui.theme.PopularTVSeriesTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 @AndroidEntryPoint
 class HomeScreen : ComponentActivity() {
@@ -82,58 +87,69 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
     var movies = listOf<MovieListItem>()
     var bannerItems = listOf<BannerItem>()
 
+    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = false)
+
     LaunchedEffect(Unit) {
         seriesViewModel.getPopularSeries(language = "en-US")
     }
 
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.primary)
+        ) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Image(
+                    painter = painterResource(id = R.drawable.app_logo_horizontal),
+                    contentDescription = "App Logo",
+                    modifier = Modifier
+                        .padding(start = 20.dp, top = 20.dp)
+                        .width(140.dp),
+                    alignment = Alignment.Center
+                )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.primary)
-    ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Image(
-                painter = painterResource(id = R.drawable.app_logo_horizontal),
-                contentDescription = "App Logo",
-                modifier = Modifier
-                    .padding(start = 20.dp, top = 20.dp)
-                    .width(140.dp),
-                alignment = Alignment.Center
-            )
+                Spacer(modifier = Modifier.weight(1f))
 
-            Spacer(modifier = Modifier.weight(1f))
+                Image(
+                    painter = painterResource(id = R.drawable.ic_search),
+                    contentDescription = "Search Icon",
+                    modifier = Modifier
+                        .padding(end = 20.dp, top = 20.dp)
+                        .wrapContentSize()
+                        .clickable {
+                            context.startActivity(Intent(context, SearchScreen::class.java))
+                        },
+                    alignment = Alignment.TopEnd,
+                )
+            }
 
-            Image(
-                painter = painterResource(id = R.drawable.ic_search),
-                contentDescription = "Search Icon",
-                modifier = Modifier
-                    .padding(end = 20.dp, top = 20.dp)
-                    .wrapContentSize()
-                    .clickable {
+            Spacer(modifier = Modifier.height(15.dp))
 
+            SwipeRefresh(
+                state = swipeRefreshState,
+                onRefresh = {
+                    swipeRefreshState.isRefreshing = true
+                    seriesViewModel.getPopularSeries(language = "en-US")
+                    swipeRefreshState.isRefreshing = false
+                }
+            ) {
 
-                    },
-                alignment = Alignment.TopEnd,
-            )
-        }
+            when (seriesResponse?.status) {
+                Status.SUCCESS -> {
+                    movies = seriesResponse!!.data?.results?.map {
+                        MovieListItem(
+                            "https://image.tmdb.org/t/p/w500${it?.posterPath}",
+                            it?.id.toString() ?: ""
+                        )
+                    } ?: emptyList()
 
-        Spacer(modifier = Modifier.height(15.dp))
+                    bannerItems = seriesResponse!!.data?.results?.mapNotNull {
+                        it?.backdropPath?.let { path ->
+                            BannerItem("https://image.tmdb.org/t/p/w500$path", it.id.toString())
+                        }
+                    } ?: emptyList()
 
-        when (seriesResponse?.status) {
-            Status.SUCCESS -> {
-                movies = seriesResponse!!.data?.results?.map {
-                    MovieListItem(
-                        "https://image.tmdb.org/t/p/w500${it?.posterPath}",
-                        it?.id.toString() ?: ""
-                    )
-                } ?: emptyList()
-
-                bannerItems = seriesResponse!!.data?.results?.mapNotNull {
-                    it?.backdropPath?.let { path ->
-                        BannerItem("https://image.tmdb.org/t/p/w500$path", it.id.toString())
-                    }
-                } ?: emptyList()
+                Column {
 
                     if (bannerItems.isNotEmpty()) {
                         BannerSlider(items = bannerItems)
@@ -158,52 +174,33 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
                         }
                         context.startActivity(intent)
                     }
-            }
 
-            Status.LOADING -> {
-                LoadingProgressUI()
+                }
+
+                }
+
+                Status.LOADING -> {
+                    LoadingProgressUI()
+                }
+
+                Status.ERROR -> {
+                    Toast.makeText(context, "Error: ${seriesResponse?.message}", Toast.LENGTH_SHORT)
+                        .show()
+                }
+
+                null -> {
+
+                }
             }
-            Status.ERROR -> {
-                Toast.makeText(context, "Error: ${seriesResponse?.message}", Toast.LENGTH_SHORT).show()
-            }
-            null -> {
 
             }
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SearchBar() {
-    val searchQuery = remember { mutableStateOf(TextFieldValue("")) }
-
-    Box(modifier = Modifier.padding(horizontal = 10.dp)) {
-        TextField(
-            value = searchQuery.value,
-            onValueChange = {
-                searchQuery.value = it
-            },
-            placeholder = { Text(stringResource(R.string.search_series_here), fontSize = 14.sp, color = Color.DarkGray) },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(55.dp),
-            colors = TextFieldDefaults.textFieldColors(
-                Color.Black,
-                containerColor = Color.LightGray,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Red,
-                unfocusedTextColor = Color.Black
-            ),
-        )
-    }
 }
 
 @Composable
 fun BannerSlider(items: List<BannerItem>) {
     val pagerState = rememberPagerState()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(items) {
         if (items.isNotEmpty()) {
@@ -211,14 +208,17 @@ fun BannerSlider(items: List<BannerItem>) {
                 try {
                     delay(3000)
                     val nextPage = (pagerState.currentPage + 1) % items.size
-                    pagerState.animateScrollToPage(nextPage)
+                    scope.launch {
+                        pagerState.animateScrollToPage(nextPage)
+                    }
+                } catch (e: CancellationException) {
+                    break
                 } catch (e: Exception) {
                     Log.e("BannerSlider", "Error during auto-scroll", e)
                 }
             }
         }
     }
-
     HorizontalPager(
         state = pagerState,
         count = items.size,

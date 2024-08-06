@@ -16,6 +16,11 @@
         android:theme="@style/Theme.PopularTVSeries"
         tools:targetApi="31">
         <activity
+            android:name=".ui.activities.SearchScreen"
+            android:exported="false"
+            android:label="@string/title_activity_search_screen"
+            android:theme="@style/Theme.PopularTVSeries" />
+        <activity
             android:name=".ui.activities.SeasonScreen"
             android:exported="false"
             android:label="@string/title_activity_season_screen"

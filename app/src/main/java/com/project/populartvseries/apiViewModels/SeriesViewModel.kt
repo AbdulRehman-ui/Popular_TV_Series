@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.project.populartvseries.common.Resource
 import com.project.populartvseries.repositories.SeriesRepository
 import com.project.populartvseries.response.PopularSeriesResponse
+import com.project.populartvseries.response.SearchSeriesResponse
 import com.project.populartvseries.response.SeasonDetailsResponse
 import com.project.populartvseries.response.SeriesDetailsResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -63,6 +64,23 @@ class SeriesViewModel @Inject constructor(
                 _res_season_details.postValue(Resource.success(it.body()))
             } else {
                 _res_season_details.postValue(Resource.error(it.message(), null))
+            }
+        }
+    }
+
+
+    private val _res_search_details = MutableLiveData<Resource<SearchSeriesResponse>>()
+
+    val res_search_details: LiveData<Resource<SearchSeriesResponse>>
+        get() = _res_search_details
+
+    fun getsearchDetails(query : String, language : String) = viewModelScope.launch {
+        _res_search_details.postValue(Resource.loading(null))
+        mainRepository.getSearchSeriesDetails(query, language, "7033a297d26122cdb80b8f226ee83111").let {
+            if (it.isSuccessful) {
+                _res_search_details.postValue(Resource.success(it.body()))
+            } else {
+                _res_search_details.postValue(Resource.error(it.message(), null))
             }
         }
     }

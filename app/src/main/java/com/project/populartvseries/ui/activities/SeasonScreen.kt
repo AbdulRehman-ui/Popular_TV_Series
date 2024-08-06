@@ -26,6 +26,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.project.populartvseries.R
 import com.project.populartvseries.apiViewModels.SeriesViewModel
 import com.project.populartvseries.common.Status
@@ -59,6 +61,8 @@ fun SeasonScreenUI(seriesViewModel: SeriesViewModel, seriesId : String, seasonNu
     val context = LocalContext.current
     val seasonResponse by seriesViewModel.res_season_details.observeAsState()
 
+    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = false)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -69,86 +73,97 @@ fun SeasonScreenUI(seriesViewModel: SeriesViewModel, seriesId : String, seasonNu
             seriesViewModel.getSeasonDetails(seriesId = seriesId, seasonId = seasonNumber, language = "en-US")
         }
 
-        when (seasonResponse?.status) {
-            Status.SUCCESS -> {
+        SwipeRefresh(
+            state = swipeRefreshState,
+            onRefresh = {
+                swipeRefreshState.isRefreshing = true
+                seriesViewModel.getSeriesDetails(seriesId = seriesId, language = "en-US")
+                seriesViewModel.getSeasonDetails(seriesId = seriesId, seasonId = "1", language = "en-US")
+                swipeRefreshState.isRefreshing = false
+            }
+        ) {
 
-                var seriesName = ""
-                var episodeTime = ""
-                var episodeRating = ""
-                var episodeList = listOf<EpisodeListItem>()
+            when (seasonResponse?.status) {
+                Status.SUCCESS -> {
 
-                seasonResponse?.data.let { it ->
+                    var seriesName = ""
+                    var episodeTime = ""
+                    var episodeRating = ""
+                    var episodeList = listOf<EpisodeListItem>()
+
+                    seasonResponse?.data.let { it ->
 
 
-                    seriesName = it?.name.toString()
+                        seriesName = it?.name.toString()
 
-                    episodeList = it?.episodes?.map {
+                        episodeList = it?.episodes?.map {
 
-                        episodeTime = if (it?.runtime == null) {
-                            "Not Mentioned"
-                        }
-                        else {
-                            it.runtime.toString() + "Mins"
-                        }
+                            episodeTime = if (it?.runtime == null) {
+                                "Not Mentioned"
+                            } else {
+                                it.runtime.toString() + "Mins"
+                            }
 
-                        episodeRating = if (it?.voteAverage == 0.0) {
-                            "No rating yet"
-                        }
-                        else {
-                            String.format("%.1f", it?.voteAverage)
-                        }
+                            episodeRating = if (it?.voteAverage == 0.0) {
+                                "No rating yet"
+                            } else {
+                                String.format("%.1f", it?.voteAverage)
+                            }
 
-                        EpisodeListItem(
-                            "https://image.tmdb.org/t/p/w500${it?.stillPath}",
-                            it?.name.toString(),
-                            episodeTime,
-                            episodeRating,
-                            it?.episodeNumber.toString()
-                        )
-                    } ?: emptyList()
-                }
-
-                Column(modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 15.dp, end = 15.dp, top = 15.dp))
-                {
-                    Row (modifier = Modifier.fillMaxWidth()) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_back_arrow),
-                            contentDescription = "Back arrow",
-                            modifier = Modifier
-                                .size(25.dp)
-                                .padding(start = 10.dp)
-                                .clickable {
-                                    (context as SeasonScreen).finish()
-                                }
-                        )
-
-                        Text(
-                            text = seriesName,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(start = 7.dp)
-                        )
+                            EpisodeListItem(
+                                "https://image.tmdb.org/t/p/w500${it?.stillPath}",
+                                it?.name.toString(),
+                                episodeTime,
+                                episodeRating,
+                                it?.episodeNumber.toString()
+                            )
+                        } ?: emptyList()
                     }
 
-                    EpisodesList(items = episodeList)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(start = 15.dp, end = 15.dp, top = 15.dp)
+                    )
+                    {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_back_arrow),
+                                contentDescription = "Back arrow",
+                                modifier = Modifier
+                                    .size(25.dp)
+                                    .padding(start = 10.dp)
+                                    .clickable {
+                                        (context as SeasonScreen).finish()
+                                    }
+                            )
+
+                            Text(
+                                text = seriesName,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 7.dp)
+                            )
+                        }
+
+                        EpisodesList(items = episodeList)
+
+                    }
 
                 }
 
-            }
+                Status.LOADING -> {
+                    LoadingProgressUI()
+                }
 
-            Status.LOADING -> {
-                LoadingProgressUI()
-            }
+                Status.ERROR -> {
 
-            Status.ERROR -> {
+                }
 
-            }
+                null -> {
 
-            null -> {
-
+                }
             }
         }
     }
