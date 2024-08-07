@@ -41,6 +41,7 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.project.populartvseries.R
 import com.project.populartvseries.apiViewModels.SeriesViewModel
 import com.project.populartvseries.common.Status
+import com.project.populartvseries.di.NetworkUtils
 import com.project.populartvseries.ui.common.MoviesList
 import com.project.populartvseries.ui.dataClass.MovieListItem
 import com.project.populartvseries.ui.theme.PopularTVSeriesTheme
@@ -77,8 +78,11 @@ fun SearchScreenUI(seriesViewModel: SeriesViewModel) {
 
     LaunchedEffect(searchQuery.value.text) {
         if (searchQuery.value.text.length >= 3) {
-            seriesViewModel.getsearchDetails(searchQuery.value.text, 1,"en-US")
-            pagingItems.refresh()
+
+            if(NetworkUtils.isOnline(context)) {
+                seriesViewModel.getsearchDetails(searchQuery.value.text, 1, "en-US")
+                pagingItems.refresh()
+            }
         }
     }
 
@@ -120,7 +124,9 @@ fun SearchScreenUI(seriesViewModel: SeriesViewModel) {
                 text = "Type something to see results",
                 color = Color.White,
                 fontSize = 14.sp,
-                modifier = Modifier.padding(top = 20.dp).align(Alignment.CenterHorizontally)
+                modifier = Modifier
+                    .padding(top = 20.dp)
+                    .align(Alignment.CenterHorizontally)
             )
         } else {
 
@@ -128,47 +134,54 @@ fun SearchScreenUI(seriesViewModel: SeriesViewModel) {
                 state = swipeRefreshState,
                 onRefresh = {
                     swipeRefreshState.isRefreshing = true
-                    if (searchQuery.value.text.length >= 3) {
-                        seriesViewModel.getsearchDetails(searchQuery.value.text, 1,"en-US")
+                    if(NetworkUtils.isOnline(context)) {
+                        if (searchQuery.value.text.length >= 3) {
+                            seriesViewModel.getsearchDetails(searchQuery.value.text, 1, "en-US")
+                        }
+                        pagingItems.refresh()
                     }
-                    pagingItems.refresh()
                     swipeRefreshState.isRefreshing = false
 
                 }
             ) {
-                when (seriesResponse?.status) {
-                    Status.SUCCESS -> {
+                if (NetworkUtils.isOnline(context)) {
+                    when (seriesResponse?.status) {
+                        Status.SUCCESS -> {
 
-                        movies = seriesResponse!!.data?.results?.map {
-                            MovieListItem(
-                                "https://image.tmdb.org/t/p/w500${it?.posterPath}",
-                                it?.id.toString() ?: ""
-                            )
-                        } ?: emptyList()
+                            movies = seriesResponse!!.data?.results?.map {
+                                MovieListItem(
+                                    "https://image.tmdb.org/t/p/w500${it?.posterPath}",
+                                    it?.id.toString() ?: ""
+                                )
+                            } ?: emptyList()
 
-                        MoviesList(items = pagingItems) { item ->
-                            val intent = Intent(context, SeriesScreen::class.java).apply {
-                                putExtra("seriesId", item.seriesId)
+                            MoviesList(items = pagingItems) { item ->
+                                val intent = Intent(context, SeriesScreen::class.java).apply {
+                                    putExtra("seriesId", item.seriesId)
+                                }
+                                context.startActivity(intent)
                             }
-                            context.startActivity(intent)
+
                         }
 
-                    }
+                        Status.LOADING -> {
+                            LoadingProgressUI()
+                        }
 
-                    Status.LOADING -> {
-                        LoadingProgressUI()
-                    }
+                        Status.ERROR -> {
+                            Toast.makeText(
+                                context,
+                                "Error: ${seriesResponse?.message}",
+                                Toast.LENGTH_SHORT
+                            )
+                                .show()
+                        }
 
-                    Status.ERROR -> {
-                        Toast.makeText(
-                            context,
-                            "Error: ${seriesResponse?.message}",
-                            Toast.LENGTH_SHORT
-                        )
-                            .show()
+                        null -> {}
                     }
-
-                    null -> {}
+                }
+                else {
+                    NoInternetUI()
                 }
             }
         }

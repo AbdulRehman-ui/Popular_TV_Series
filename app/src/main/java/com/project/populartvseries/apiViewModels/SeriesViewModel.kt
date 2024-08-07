@@ -13,9 +13,11 @@ import com.project.populartvseries.repositories.SeriesRepository
 import com.project.populartvseries.resources.SearchSeriesPagingSource
 import com.project.populartvseries.resources.SeriesPagingSource
 import com.project.populartvseries.response.PopularSeriesResponse
+import com.project.populartvseries.response.ResultsItemPopular
 import com.project.populartvseries.response.SearchSeriesResponse
 import com.project.populartvseries.response.SeasonDetailsResponse
 import com.project.populartvseries.response.SeriesDetailsResponse
+import com.project.populartvseries.room.entities.PopularSeriesEntity
 import com.project.populartvseries.ui.dataClass.MovieListItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -38,14 +40,42 @@ class SeriesViewModel @Inject constructor(
         SeriesPagingSource(this)
     }.flow.cachedIn(viewModelScope)
 
+    val localSeriesData = mainRepository.getPopularSeriesFromLocal()
+
     fun getPopularSeries(language: String, page: Int) = viewModelScope.launch {
         _res_popular_series.postValue(Resource.loading(null))
         mainRepository.getPopularSeries(language, page, "7033a297d26122cdb80b8f226ee83111").let {
             if (it.isSuccessful) {
                 _res_popular_series.postValue(Resource.success(it.body()))
+
+                it.body()?.results?.let { results ->
+                    val entities = results.map {
+                        PopularSeriesEntity(
+                            it?.id.toString(),
+                            it?.posterPath ?: "",
+                            it?.backdropPath ?: ""
+                        )
+                    }
+                    mainRepository.popularSeriesLocal(entities)
+                }
+
             } else {
                 _res_popular_series.postValue(Resource.error(it.message(), null))
             }
+        }
+    }
+
+    fun loadPopularSeriesFromLocalDb() = viewModelScope.launch {
+        localSeriesData.value?.let { popularSeries ->
+            val results = popularSeries.map {
+                ResultsItemPopular(
+                    id = it.id.toIntOrNull(),
+                    posterPath = it.posterPath,
+                    backdropPath = it.backdropPath
+                )
+            }
+            val response = PopularSeriesResponse(results = results)
+            _res_popular_series.postValue(Resource.success(response))
         }
     }
 

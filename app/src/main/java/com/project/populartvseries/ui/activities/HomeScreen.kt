@@ -10,6 +10,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -57,7 +58,10 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.project.populartvseries.R
 import com.project.populartvseries.apiViewModels.SeriesViewModel
 import com.project.populartvseries.common.Status
+import com.project.populartvseries.di.NetworkUtils
+import com.project.populartvseries.room.entities.PopularSeriesEntity
 import com.project.populartvseries.ui.common.MoviesList
+import com.project.populartvseries.ui.common.MoviesListLocal
 import com.project.populartvseries.ui.dataClass.BannerItem
 import com.project.populartvseries.ui.dataClass.MovieListItem
 import com.project.populartvseries.ui.theme.PopularTVSeriesTheme
@@ -91,9 +95,15 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = false)
     val seriesPager = seriesViewModel.pager.collectAsLazyPagingItems()
 
+    val localSeriesData by seriesViewModel.localSeriesData.observeAsState(emptyList())
+
 
     LaunchedEffect(Unit) {
-        seriesViewModel.getPopularSeries(language = "en-US", page = 1)
+        if (NetworkUtils.isOnline(context)) {
+            seriesViewModel.getPopularSeries(language = "en-US", page = 1)
+        } else {
+            seriesViewModel.loadPopularSeriesFromLocalDb()
+        }
     }
 
     Column(
@@ -131,8 +141,16 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
         SwipeRefresh(
             state = swipeRefreshState,
             onRefresh = {
+
                 swipeRefreshState.isRefreshing = true
-                seriesViewModel.getPopularSeries(language = "en-US", page = 1)
+
+                if (NetworkUtils.isOnline(context)) {
+                    seriesViewModel.getPopularSeries(language = "en-US", page = 1)
+                    seriesPager.refresh()
+                } else {
+                    seriesViewModel.loadPopularSeriesFromLocalDb()
+                }
+
                 swipeRefreshState.isRefreshing = false
 
                 seriesPager.refresh()
@@ -140,62 +158,112 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
             }
         ) {
 
-            when (seriesResponse?.status) {
-                Status.SUCCESS -> {
-                    movies = seriesResponse!!.data?.results?.map {
-                        MovieListItem(
-                            "https://image.tmdb.org/t/p/w500${it?.posterPath}",
-                            it?.id.toString() ?: ""
-                        )
-                    } ?: emptyList()
+            if (NetworkUtils.isOnline(context)) {
 
-                    bannerItems = seriesResponse!!.data?.results?.mapNotNull {
-                        it?.backdropPath?.let { path ->
-                            BannerItem("https://image.tmdb.org/t/p/w500$path", it.id.toString())
-                        }
-                    } ?: emptyList()
+                when (seriesResponse?.status) {
+                    Status.SUCCESS -> {
 
-                    Column {
+                        movies = seriesResponse!!.data?.results?.map {
+                            MovieListItem(
+                                "https://image.tmdb.org/t/p/w500${it?.posterPath}",
+                                it?.id.toString() ?: ""
+                            )
+                        } ?: emptyList()
 
-                        if (bannerItems.isNotEmpty()) {
-                            BannerSlider(items = bannerItems)
-                        } else {
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                        }
-
-                        Spacer(modifier = Modifier.height(15.dp))
-
-                        Text(
-                            text = stringResource(R.string.popular),
-                            fontSize = 19.sp,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(start = 15.dp)
-                        )
-                        MoviesList(items = seriesPager) { item ->
-                            println("Clicked item: ${item.seriesId}")
-
-                            val intent = Intent(context, SeriesScreen::class.java).apply {
-                                putExtra("seriesId", item.seriesId)
+                        bannerItems = seriesResponse!!.data?.results?.mapNotNull {
+                            it?.backdropPath?.let { path ->
+                                BannerItem("https://image.tmdb.org/t/p/w500$path", it.id.toString())
                             }
-                            context.startActivity(intent)
+                        } ?: emptyList()
+
+
+                        Column {
+
+                            if (bannerItems.isNotEmpty()) {
+                                BannerSlider(items = bannerItems)
+                            } else {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                            }
+
+                            Spacer(modifier = Modifier.height(15.dp))
+
+                            Text(
+                                text = stringResource(R.string.popular),
+                                fontSize = 19.sp,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 15.dp)
+                            )
+                            MoviesList(items = seriesPager) { item ->
+                                println("Clicked item: ${item.seriesId}")
+
+                                val intent = Intent(context, SeriesScreen::class.java).apply {
+                                    putExtra("seriesId", item.seriesId)
+                                }
+                                context.startActivity(intent)
+                            }
+
                         }
 
                     }
 
+                    Status.LOADING -> {
+                        LoadingProgressUI()
+                    }
+
+                    Status.ERROR -> {
+                        Toast.makeText(
+                            context,
+                            "Error: ${seriesResponse?.message}",
+                            Toast.LENGTH_SHORT
+                        )
+                            .show()
+                    }
+
+                    null -> {
+
+                    }
+                }
+            }
+
+            else {
+
+                movies = localSeriesData.map {
+                    MovieListItem(
+                        "https://image.tmdb.org/t/p/w500${it.posterPath}",
+                        it.id
+                    )
                 }
 
-                Status.LOADING -> {
-                    LoadingProgressUI()
+                bannerItems = localSeriesData.mapNotNull {
+                    it.backdropPath.let { path ->
+                        BannerItem("https://image.tmdb.org/t/p/w500$path", it.id)
+                    }
                 }
 
-                Status.ERROR -> {
-                    Toast.makeText(context, "Error: ${seriesResponse?.message}", Toast.LENGTH_SHORT)
-                        .show()
-                }
+                Column {
+                    if (bannerItems.isNotEmpty()) {
+                        BannerSlider(items = bannerItems)
+                    } else {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    }
 
-                null -> {
+                    Spacer(modifier = Modifier.height(15.dp))
 
+                    Text(
+                        text = stringResource(R.string.popular),
+                        fontSize = 19.sp,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 15.dp)
+                    )
+                    MoviesListLocal(items = movies) { item ->
+                        println("Clicked item: ${item.seriesId}")
+                        val intent = Intent(context, SeriesScreen::class.java).apply {
+                            putExtra("seriesId", item.seriesId)
+                        }
+                        context.startActivity(intent)
+                    }
                 }
             }
 
@@ -270,3 +338,31 @@ fun LoadingProgressUI() {
         )
     }
 }
+
+
+@Composable
+fun NoInternetUI() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primary),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.no_internet),
+            contentDescription = "No Internet",
+            modifier = Modifier.size(100.dp)
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+      Text(
+          text = "No Network available",
+          color = MaterialTheme.colorScheme.tertiary,
+          fontWeight = FontWeight.Bold,
+          fontSize = 16.sp
+      )
+    }
+}
+
