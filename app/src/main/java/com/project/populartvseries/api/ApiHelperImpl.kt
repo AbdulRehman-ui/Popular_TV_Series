@@ -8,6 +8,18 @@ import com.project.populartvseries.response.SeriesDetailsResponse
 import retrofit2.Response
 import javax.inject.Inject
 
+/*
+    * ApiHelperImpl is a concrete implementation of the ApiHelper interface. It takes the ApiService
+      as a dependency and delegates API calls to it.
+
+    * The ApiHelperImpl class encapsulates the logic related to making API calls, such as passing
+      parameters and handling responses.
+
+    * By using this pattern, the SeriesRepository only depends on the ApiHelper interface, not on
+      the specific implementation or the ApiService. This allows for easier testing and swapping out
+      implementations if needed.
+ */
+
 class ApiHelperImpl @Inject constructor(
     private val apiService: ApiService
 ) : ApiHelper {

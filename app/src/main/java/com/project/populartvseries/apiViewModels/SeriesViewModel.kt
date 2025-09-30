@@ -25,6 +25,19 @@ import kotlinx.coroutines.launch
 import retrofit2.Response
 import javax.inject.Inject
 
+/*
+    ViewModel holds and manages UI-related data in a lifecycle-conscious way. This ensures that data
+    survives configuration changes like screen rotations.
+
+    LiveData
+        LiveData is used to observe data changes and automatically update the UI. In this code,
+        LiveData objects are used to hold API responses for popular series, series details, season
+        details, and search results.
+
+    SeriesViewModel
+        The SeriesViewModel class interacts with the SeriesRepository to fetch data and expose it
+        via LiveData. It uses Kotlin Coroutines to perform network operations asynchronously.
+ */
 
 @HiltViewModel
 class SeriesViewModel @Inject constructor(
@@ -35,12 +48,6 @@ class SeriesViewModel @Inject constructor(
     private val _res_popular_series = MutableLiveData<Resource<PopularSeriesResponse>>()
     val res_popular_series: LiveData<Resource<PopularSeriesResponse>>
         get() = _res_popular_series
-
-    val pager = Pager(PagingConfig(pageSize = 10)) {
-        SeriesPagingSource(this)
-    }.flow.cachedIn(viewModelScope)
-
-    val localSeriesData = mainRepository.getPopularSeriesFromLocal()
 
     fun getPopularSeries(language: String, page: Int) = viewModelScope.launch {
         _res_popular_series.postValue(Resource.loading(null))
@@ -65,6 +72,9 @@ class SeriesViewModel @Inject constructor(
         }
     }
 
+
+    val localSeriesData = mainRepository.getPopularSeriesFromLocal()
+
     fun loadPopularSeriesFromLocalDb() = viewModelScope.launch {
         localSeriesData.value?.let { popularSeries ->
             val results = popularSeries.map {
@@ -78,6 +88,11 @@ class SeriesViewModel @Inject constructor(
             _res_popular_series.postValue(Resource.success(response))
         }
     }
+
+
+    val pager = Pager(PagingConfig(pageSize = 10)) {
+        SeriesPagingSource(this)
+    }.flow.cachedIn(viewModelScope)
 
     suspend fun fetchPopularSeries(language: String, page: Int): Response<PopularSeriesResponse> {
         return mainRepository.getPopularSeries(language, page, "7033a297d26122cdb80b8f226ee83111")

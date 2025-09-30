@@ -70,6 +70,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
+/*
+    @AndroidEntryPoint, indicating that it is a part of the Dagger Hilt dependency graph. This
+    enables dependency injection in this activity.
+ */
+
 @AndroidEntryPoint
 class HomeScreen : ComponentActivity() {
 
@@ -266,7 +271,6 @@ fun HomeScreenUI(seriesViewModel: SeriesViewModel) {
                     }
                 }
             }
-
         }
     }
 }

@@ -6,6 +6,11 @@ import com.project.populartvseries.response.SeasonDetailsResponse
 import com.project.populartvseries.response.SeriesDetailsResponse
 import retrofit2.Response
 
+/*
+    ApiHelper is an interface that defines the methods available for interacting with the API, like
+    getPopularSeries, getSeriesDetails, etc.
+ */
+
 interface ApiHelper {
 
     suspend fun getPopularSeries(language : String, page: Int, apiKey : String) : Response<PopularSeriesResponse>

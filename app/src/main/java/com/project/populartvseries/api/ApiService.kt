@@ -11,6 +11,11 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+/*
+    The ApiService interface defines the endpoints of the API. Each method represents a network request
+    and uses annotations like @GET, @Path, and @Query to describe the HTTP method, endpoint, and query parameters.
+ */
+
 interface ApiService {
 
     @GET("tv/popular")
